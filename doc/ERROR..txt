@@ -1,0 +1,24 @@
+Failed to load resource: net::ERR_CONNECTION_REFUSED
+:8080/api/auth/login:1  Failed to load resource: net::ERR_CONNECTION_REFUSED
+
+2026-05-23 14:09:19 [http-nio-8080-exec-1] DEBUG c.r.m.NewsMapper.selectList_mpCount - ==> Parameters: 1(Integer)
+2026-05-23 14:09:19 [http-nio-8080-exec-1] DEBUG c.r.m.NewsMapper.selectList_mpCount - <==      Total: 1
+2026-05-23 14:09:19 [http-nio-8080-exec-1] DEBUG c.r.mapper.NewsMapper.selectList - 
+==>  Preparing: SELECT id,title,cover_image,summary,content,author,source,view_count,status,publish_time,create_time,update_time,create_by,update_by,deleted FROM biz_news WHERE deleted=0 AND (status = ?) ORDER BY publish_time DESC LIMIT ?
+2026-05-23 14:09:19 [http-nio-8080-exec-1] DEBUG c.r.mapper.NewsMapper.selectList - 
+==> Parameters: 1(Integer), 10(Long)
+2026-05-23 14:09:19 [http-nio-8080-exec-1] DEBUG c.r.mapper.NewsMapper.selectList - 
+<==      Total: 5
+2026-05-23 14:09:25 [http-nio-8080-exec-3] WARN  com.rental.security.JwtUtils - JWT
+楠岃瘉澶辫触: JWT expired 3953771 milliseconds ago at 2026-05-23T05:03:32.000Z. Current time: 2026-05-23T06:09:25.771Z. Allowed clock skew: 0 milliseconds.
+2026-05-23 14:09:35 [http-nio-8080-exec-5] WARN  com.rental.security.JwtUtils - JWT
+楠岃瘉澶辫触: JWT expired 3963912 milliseconds ago at 2026-05-23T05:03:32.000Z. Current time: 2026-05-23T06:09:35.912Z. Allowed clock skew: 0 milliseconds.
+2026-05-23 14:09:36 [http-nio-8080-exec-5] INFO  c.r.service.impl.AuthServiceImpl - 
+鍙戦€侀獙璇佺爜鍒版墜鏈? 13800138000, 楠岃瘉鐮? 318183
+
+2026-05-23 14:09:36 [http-nio-8080-exec-5] DEBUG c.rental.mapper.SmsCodeMapper.insert - ==>  Preparing: INSERT INTO biz_sms_code ( mobile, code, status, expire_time, create_time ) VALUES ( ?, ?, ?, ?, ? )
+2026-05-23 14:09:36 [http-nio-8080-exec-5] DEBUG c.rental.mapper.SmsCodeMapper.insert - ==> Parameters: 13800138000(String), 318183(String), 0(Integer), 2026-05-23T14:14:36.549035200(LocalDateTime), 2026-05-23T14:09:36.554032200(LocalDateTime)
+2026-05-23 14:09:36 [http-nio-8080-exec-5] DEBUG c.rental.mapper.SmsCodeMapper.insert - <==    Updates: 1
+2026-05-23 14:09:43 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-05-23 14:09:43 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+PS E:\Workspace\Java\GreatCreate> 
