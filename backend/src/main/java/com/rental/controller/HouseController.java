@@ -19,7 +19,16 @@ public class HouseController {
     private final HouseService houseService;
 
     @GetMapping("/page")
-    public CommonResponse<PageResult<HouseSimpleVO>> pageHouse(@Valid HouseQueryDTO query) {
+    public CommonResponse<PageResult<HouseSimpleVO>> pageHouse(
+            @ModelAttribute HouseQueryDTO query) {
+        // 设置默认分页参数
+        if (query.getPageNum() == null) {
+            query.setPageNum(1);
+        }
+        if (query.getPageSize() == null) {
+            query.setPageSize(10);
+        }
+        
         IPage<HouseSimpleVO> page = houseService.pageHouse(query);
         return CommonResponse.success(new PageResult<>(
             page.getTotal(),

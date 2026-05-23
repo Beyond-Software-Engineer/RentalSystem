@@ -14,6 +14,7 @@
       fixed
       placeholder
       active-color="#667eea"
+      :z-index="100"
     >
       <van-tabbar-item
         v-for="tab in tabbarList"

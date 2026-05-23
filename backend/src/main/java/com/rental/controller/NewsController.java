@@ -3,6 +3,7 @@ package com.rental.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.rental.common.CommonResponse;
 import com.rental.common.PageResult;
+import com.rental.dto.NewsQueryDTO;
 import com.rental.service.NewsService;
 import com.rental.vo.NewsVO;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,8 @@ public class NewsController {
     private final NewsService newsService;
 
     @GetMapping("/page")
-    public CommonResponse<PageResult<NewsVO>> pageNews(
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        IPage<NewsVO> page = newsService.pageNews(pageNum, pageSize);
+    public CommonResponse<PageResult<NewsVO>> pageNews(NewsQueryDTO query) {
+        IPage<NewsVO> page = newsService.pageNews(query);
         return CommonResponse.success(new PageResult<>(
             page.getTotal(),
             page.getSize(),
