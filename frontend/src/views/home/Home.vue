@@ -1,44 +1,80 @@
 <template>
   <div class="home-page">
-    <van-search
-      v-model="searchText"
-      placeholder="搜索房源"
-      show-action
-      @search="handleSearch"
-    >
-      <template #action>
-        <van-button size="small" type="primary" @click="handleSearch">搜索</van-button>
-      </template>
-    </van-search>
-
-    <van-swipe :autoplay="3000" indicator-color="white" class="banner">
-      <van-swipe-item v-for="(item, index) in banners" :key="index">
-        <img :src="item.image" class="banner-image" />
-      </van-swipe-item>
-    </van-swipe>
-
-    <van-grid class="quick-entrance">
-      <van-grid-item v-for="item in quickItems" :key="item.name" :icon="item.icon" @click="handleQuickClick(item)">
-        {{ item.name }}
-      </van-grid-item>
-    </van-grid>
-
-    <div class="section-header">
-      <span class="section-title">推荐房源</span>
-      <span class="section-more" @click="goHouseList">更多</span>
-    </div>
-    <div class="house-list">
-      <HouseCard v-for="house in recommendList" :key="house.id" :house="house" />
+    <!-- 顶部区域 -->
+    <div class="home-header">
+      <div class="header-content">
+        <LocationSelector v-model="location" @change="handleLocationChange" />
+        <van-search
+          v-model="searchText"
+          placeholder="搜索小区、地铁站"
+          shape="round"
+          background="transparent"
+          @search="handleSearch"
+        />
+      </div>
     </div>
 
-    <div class="section-header">
-      <span class="section-title">最新资讯</span>
-      <span class="section-more" @click="goNews">更多</span>
-    </div>
-    <div class="news-list">
-      <NewsCard v-for="news in newsList" :key="news.id" :news="news" />
+    <!-- 轮播图区域 -->
+    <div class="banner-wrapper">
+      <van-swipe :autoplay="4000" indicator-color="white" class="banner" :show-indicators="true">
+        <van-swipe-item v-for="(item, index) in banners" :key="index">
+          <img :src="item.image" class="banner-image" />
+        </van-swipe-item>
+      </van-swipe>
     </div>
 
+    <!-- 快捷入口 -->
+    <div class="quick-entrance">
+      <div class="entrance-grid">
+        <div
+          v-for="item in quickItems"
+          :key="item.name"
+          class="entrance-item"
+          @click="handleQuickClick(item)"
+        >
+          <div class="entrance-icon" :style="{ backgroundColor: item.bgColor }">
+            <van-icon :name="item.icon" size="24" :color="item.iconColor" />
+          </div>
+          <span class="entrance-name">{{ item.name }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 推荐房源 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title-group">
+          <span class="section-title">推荐房源</span>
+          <span class="section-subtitle">为您精选优质好房</span>
+        </div>
+        <div class="section-more" @click="goHouseList">
+          <span>查看更多</span>
+          <van-icon name="arrow" size="14" />
+        </div>
+      </div>
+      <div class="house-list">
+        <HouseCard v-for="house in recommendList" :key="house.id" :house="house" />
+      </div>
+    </div>
+
+    <!-- 最新资讯 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title-group">
+          <span class="section-title">最新资讯</span>
+          <span class="section-subtitle">了解租房最新动态</span>
+        </div>
+        <div class="section-more" @click="goNews">
+          <span>查看更多</span>
+          <van-icon name="arrow" size="14" />
+        </div>
+      </div>
+      <div class="news-list">
+        <NewsCard v-for="news in newsList" :key="news.id" :news="news" />
+      </div>
+    </div>
+
+    <!-- 加载状态 -->
     <van-loading v-if="loading" class="loading" />
   </div>
 </template>
@@ -46,9 +82,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, Swipe, SwipeItem, Grid, GridItem, Loading, Button } from 'vant'
+import { Search, Swipe, SwipeItem, Grid, GridItem, Loading, Button, Icon, Empty } from 'vant'
 import HouseCard from '@/components/HouseCard.vue'
 import NewsCard from '@/components/NewsCard.vue'
+import LocationSelector from '@/components/LocationSelector.vue'
 import { useHouseStore } from '@/stores/house'
 import { newsApi } from '@/api/news'
 
@@ -56,19 +93,29 @@ const router = useRouter()
 const searchText = ref('')
 const loading = ref(true)
 
+const location = ref({
+  province: '北京市',
+  city: '北京市',
+  district: '',
+  provinceCode: '110000',
+  cityCode: '110100',
+  districtCode: ''
+})
+
 const banners = [
   { image: 'https://picsum.photos/800/400?random=1' },
   { image: 'https://picsum.photos/800/400?random=2' },
-  { image: 'https://picsum.photos/800/400?random=3' }
+  { image: 'https://picsum.photos/800/400?random=3' },
+  { image: 'https://picsum.photos/800/400?random=4' }
 ]
 
 const quickItems = [
-  { name: '整租', icon: 'wap-home-o' },
-  { name: '合租', icon: 'search' },
-  { name: '筛选', icon: 'filter-o' },
-  { name: '地图找房', icon: 'location-o' },
-  { name: '收藏', icon: 'like-o' },
-  { name: '咨询', icon: 'chat-o' }
+  { name: '整租', icon: 'wap-home-o', bgColor: '#e8f4ff', iconColor: '#1890ff' },
+  { name: '合租', icon: 'friends-o', bgColor: '#fff7e6', iconColor: '#fa8c16' },
+  { name: '筛选', icon: 'filter-o', bgColor: '#f6ffed', iconColor: '#52c41a' },
+  { name: '地图找房', icon: 'location-o', bgColor: '#fff1f0', iconColor: '#ff4d4f' },
+  { name: '收藏', icon: 'star-o', bgColor: '#fef0ff', iconColor: '#722ed1' },
+  { name: '咨询', icon: 'service-o', bgColor: '#fff2e8', iconColor: '#fa541c' }
 ]
 
 const houseStore = useHouseStore()
@@ -84,8 +131,7 @@ async function loadData() {
   try {
     await houseStore.fetchRecommend()
     recommendList.value = houseStore.recommendList.slice(0, 3)
-    
-    const { newsApi } = await import('@/api/news')
+
     const { data } = await newsApi.pageNews({ pageNum: 1, pageSize: 3 })
     newsList.value = data.records
   } catch (error) {
@@ -104,9 +150,16 @@ function handleQuickClick(item) {
     router.push('/house/filter')
   } else if (item.name === '收藏') {
     router.push('/profile')
+  } else if (item.name === '咨询') {
+    router.push('/news')
   } else {
     router.push('/house')
   }
+}
+
+function handleLocationChange(val) {
+  console.log('位置已变更:', val)
+  // 可以在这里刷新房源列表或其他需要根据位置更新的内容
 }
 
 function goHouseList() {
@@ -120,53 +173,253 @@ function goNews() {
 
 <style lang="scss" scoped>
 .home-page {
+  min-height: 100vh;
+  background: #f5f5f5;
   padding-bottom: 60px;
 }
 
-.banner {
-  margin: 12px;
-  border-radius: 12px;
-  overflow: hidden;
+// 顶部区域
+.home-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 
-  .banner-image {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    :deep(.van-search) {
+      flex: 1;
+      padding: 0;
+
+      .van-search__content {
+        background: rgba(255, 255, 255, 0.95);
+      }
+    }
   }
 }
 
+// 轮播图区域
+.banner-wrapper {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding-bottom: 20px;
+
+  .banner {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+    .banner-image {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+    }
+
+    :deep(.van-swipe__indicators) {
+      bottom: 12px;
+
+      .van-swipe__indicator {
+        width: 6px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+
+        &.van-swipe__indicator--active {
+          width: 16px;
+          border-radius: 3px;
+          background: #fff;
+        }
+      }
+    }
+  }
+}
+
+// 快捷入口
 .quick-entrance {
-  padding: 0 12px;
-  margin-bottom: 12px;
+  background: #fff;
+  padding: 20px 16px;
+  margin-top: -12px;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+  z-index: 5;
+
+  .entrance-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+
+    .entrance-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      .entrance-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: box-shadow 0.2s;
+
+        &:active {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
+
+      .entrance-name {
+        font-size: 12px;
+        color: #333;
+      }
+    }
+  }
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 12px 12px;
+// 内容区块
+.section {
+  background: #fff;
+  padding: 16px 0;
+  margin-top: 12px;
 
-  .section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid #f5f5f5;
+
+    .section-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .section-subtitle {
+        font-size: 12px;
+        color: #999;
+      }
+    }
+
+    .section-more {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      color: #667eea;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+
+      &:active {
+        opacity: 0.7;
+      }
+    }
   }
 
-  .section-more {
-    font-size: 13px;
-    color: #999;
+  .house-list {
+    padding: 12px 16px;
+  }
+
+  .news-list {
+    padding: 12px 16px;
   }
 }
 
-.house-list {
-  padding: 0 12px;
-}
-
-.news-list {
-  padding: 0 12px;
-}
-
+// 加载状态
 .loading {
-  padding: 20px;
+  display: block;
+  margin: 20px auto;
+  text-align: center;
+}
+
+// 响应式适配
+@media (min-width: 768px) {
+  .home-header {
+    .header-content {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+  }
+
+  .banner-wrapper {
+    .banner {
+      max-width: 720px;
+      margin: 0 auto;
+
+      .banner-image {
+        height: 200px;
+      }
+    }
+  }
+
+  .quick-entrance {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .section {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-header {
+    .header-content {
+      max-width: 960px;
+    }
+  }
+
+  .banner-wrapper {
+    .banner {
+      max-width: 960px;
+
+      .banner-image {
+        height: 240px;
+      }
+    }
+  }
+
+  .quick-entrance {
+    max-width: 960px;
+
+    .entrance-grid {
+      gap: 24px;
+
+      .entrance-item {
+        .entrance-icon {
+          width: 56px;
+          height: 56px;
+        }
+
+        .entrance-name {
+          font-size: 13px;
+        }
+      }
+    }
+  }
+
+  .section {
+    max-width: 960px;
+  }
 }
 </style>

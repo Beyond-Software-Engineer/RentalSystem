@@ -35,17 +35,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (StringUtils.hasText(token) && jwtUtils.validateToken(token)) {
                 if (jwtUtils.isAccessToken(token)) {
                     Long userId = jwtUtils.getUserId(token);
-                    UserEntity user = userMapper.selectById(userId);
+                    try {
+                        UserEntity user = userMapper.selectById(userId);
 
-                    if (user != null) {
-                        UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        if (user != null) {
+                            UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        }
+                    } catch (Exception e) {
+                        log.warn("查询用户信息失败，用户ID: {}, 错误: {}", userId, e.getMessage());
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("认证过滤器异常", e);
+            log.warn("JWT 认证处理异常: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

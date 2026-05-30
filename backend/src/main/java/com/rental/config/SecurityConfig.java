@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .requestMatchers("/house/page", "/house/recommend", "/house/{id}").permitAll()
                 .requestMatchers("/news/page", "/news/{id}").permitAll()
                 .requestMatchers("/region/list").permitAll()
+                .requestMatchers("/health", "/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -30,14 +30,11 @@
       <!-- 分页控制 -->
       <div class="pagination-control">
         <!-- 每页条数选择 -->
-        <van-dropdown-menu class="page-size-menu" :overlay="true">
-          <van-dropdown-item
-            ref="pageSizeItemRef"
-            v-model="pageSize"
-            :options="pageSizeOptions"
-            @change="handlePageSizeChange"
-          />
-        </van-dropdown-menu>
+        <PageSizeSelector
+          v-model="pageSize"
+          :options="pageSizeOptions"
+          @change="handlePageSizeChange"
+        />
 
         <!-- 分页按钮组 -->
         <div class="pagination-buttons">
@@ -97,6 +94,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Search, Empty, Loading, Button, Icon, Field, showToast } from 'vant'
 import NewsCard from '@/components/NewsCard.vue'
+import PageSizeSelector from '@/components/PageSizeSelector.vue'
 import { newsApi } from '@/api/news'
 
 const searchText = ref('')
@@ -108,7 +106,6 @@ const pageSize = ref(10)
 const total = ref(0)
 
 const jumpPage = ref('')
-const pageSizeItemRef = ref(null)
 
 // 分页配置
 const pageSizeOptions = [
