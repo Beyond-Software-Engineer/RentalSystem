@@ -127,7 +127,6 @@ const banners = [
 const quickItems = [
   { name: '整租', icon: 'wap-home-o', bgColor: '#e8f4ff', iconColor: '#1890ff' },
   { name: '合租', icon: 'friends-o', bgColor: '#fff7e6', iconColor: '#fa8c16' },
-  { name: '筛选', icon: 'filter-o', bgColor: '#f6ffed', iconColor: '#52c41a' },
   { name: '地图找房', icon: 'location-o', bgColor: '#fff1f0', iconColor: '#ff4d4f' },
   { name: '收藏', icon: 'star-o', bgColor: '#fef0ff', iconColor: '#722ed1' },
   { name: '咨询', icon: 'service-o', bgColor: '#fff2e8', iconColor: '#fa541c' }
@@ -173,9 +172,7 @@ function handleSearch() {
 }
 
 function handleQuickClick(item) {
-  if (item.name === '筛选') {
-    router.push('/house/filter')
-  } else if (item.name === '收藏') {
+  if (item.name === '收藏') {
     router.push('/profile')
   } else if (item.name === '咨询') {
     router.push('/news')

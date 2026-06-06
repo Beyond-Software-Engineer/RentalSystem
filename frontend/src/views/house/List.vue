@@ -1,23 +1,35 @@
 <template>
   <div class="house-list-page" ref="listContainer">
-    <!-- 搜索栏 -->
-    <van-search
-      v-model="searchText"
-      placeholder="搜索房源"
-      show-action
-      @search="handleSearch"
-    >
-      <template #action>
-        <div @click="handleSearch">搜索</div>
-      </template>
-    </van-search>
+    <!-- 搜索栏和筛选按钮 -->
+    <div class="search-bar-wrapper">
+      <van-search
+        v-model="searchText"
+        placeholder="搜索房源"
+        show-action
+        @search="handleSearch"
+      >
+        <template #action>
+          <div @click="handleSearch" class="search-btn">搜索</div>
+        </template>
+      </van-search>
+      <div class="filter-wrapper" @click="openFilter">
+        <van-icon name="filter-o" size="20" color="#1890ff" />
+        <span class="filter-text">筛选</span>
+      </div>
+    </div>
 
-    <!-- 筛选栏 -->
-    <van-dropdown-menu>
-      <van-dropdown-item v-model="filterParams.region" :options="regionOptions" title="区域" @change="handleFilterChange" />
-      <van-dropdown-item v-model="filterParams.price" :options="priceOptions" title="价格" @change="handleFilterChange" />
-      <van-dropdown-item v-model="filterParams.room" :options="roomOptions" title="房型" @change="handleFilterChange" />
-    </van-dropdown-menu>
+    <!-- 筛选弹窗 -->
+    <div v-if="showFilterPopup" class="custom-popup-overlay" @click.self="showFilterPopup = false">
+      <div class="custom-popup-content">
+        <div class="popup-header">
+          <h3 class="popup-title">筛选</h3>
+          <van-icon name="cross" class="popup-close" @click="showFilterPopup = false" />
+        </div>
+        <div class="popup-body">
+          <Filter as-popup @confirm="handleFilterConfirm" @cancel="showFilterPopup = false" />
+        </div>
+      </div>
+    </div>
 
     <!-- 房源列表 -->
     <div class="house-content">
@@ -106,11 +118,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Search, Empty, Loading, DropdownMenu, DropdownItem, Button, Icon, Field, showToast } from 'vant'
+import { Search, Empty, Loading, Button, Icon, Field, Popup, showToast } from 'vant'
 import HouseCard from '@/components/HouseCard.vue'
 import PageSizeSelector from '@/components/PageSizeSelector.vue'
+import Filter from './Filter.vue'
 import { houseApi } from '@/api/house'
-import { regionApi } from '@/api/region'
 
 const route = useRoute()
 const router = useRouter()
@@ -122,6 +134,7 @@ const houseList = ref([])
 const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const showFilterPopup = ref(false)
 
 const jumpPage = ref('')
 
@@ -134,8 +147,9 @@ const pageSizeOptions = [
 
 // 筛选参数
 const filterParams = ref({
-  region: '',
-  price: '',
+  regionId: '',
+  minRent: '',
+  maxRent: '',
   room: '',
   hall: '',
   kitchen: '',
@@ -146,24 +160,6 @@ const filterParams = ref({
   sortField: '',
   sortOrder: ''
 })
-
-const priceOptions = [
-  { text: '全部', value: '' },
-  { text: '2000以下', value: '0-2000' },
-  { text: '2000-3000', value: '2000-3000' },
-  { text: '3000-5000', value: '3000-5000' },
-  { text: '5000以上', value: '5000-99999' }
-]
-
-const roomOptions = [
-  { text: '全部', value: '' },
-  { text: '一居室', value: '1' },
-  { text: '两居室', value: '2' },
-  { text: '三居室', value: '3' },
-  { text: '四居及以上', value: '4+' }
-]
-
-const regionOptions = ref([{ text: '全部', value: '' }])
 
 // 计算属性
 const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
@@ -210,7 +206,6 @@ const visiblePages = computed(() => {
 const listContainer = ref(null)
 
 onMounted(async () => {
-  await loadRegions()
   // 处理从筛选页面传递的参数
   handleRouteParams()
   await loadHouseList()
@@ -225,12 +220,13 @@ function handleRouteParams() {
   const query = route.query
   
   if (query.regionId) {
-    filterParams.value.region = query.regionId
+    filterParams.value.regionId = query.regionId
   }
-  if (query.minRent || query.maxRent) {
-    const min = query.minRent || '0'
-    const max = query.maxRent || '99999'
-    filterParams.value.price = `${min}-${max}`
+  if (query.minRent) {
+    filterParams.value.minRent = query.minRent
+  }
+  if (query.maxRent) {
+    filterParams.value.maxRent = query.maxRent
   }
   if (query.room) {
     filterParams.value.room = query.room
@@ -264,16 +260,17 @@ function handleRouteParams() {
   }
 }
 
-async function loadRegions() {
-  try {
-    const { data } = await regionApi.listRegions()
-    regionOptions.value = [
-      { text: '全部', value: '' },
-      ...data.map(r => ({ text: r.name, value: r.id.toString() }))
-    ]
-  } catch (error) {
-    console.error('加载区域失败', error)
-  }
+function openFilter() {
+  showFilterPopup.value = true
+}
+
+function handleFilterConfirm(params) {
+  // 更新筛选参数
+  filterParams.value = { ...params }
+  showFilterPopup.value = false
+  pageNum.value = 1
+  loadHouseList()
+  scrollToTop()
 }
 
 async function loadHouseList() {
@@ -301,22 +298,34 @@ async function loadHouseList() {
 function getFilterParams() {
   const params = {}
   
-  if (filterParams.value.region) {
-    params.regionId = Number(filterParams.value.region)
+  // 处理三级区域信息
+  if (filterParams.value.provinceCode) {
+    params.provinceCode = filterParams.value.provinceCode
   }
   
-  if (filterParams.value.price) {
-    const range = filterParams.value.price.split('-')
-    if (range[0]) params.minRent = Number(range[0])
-    if (range[1]) params.maxRent = Number(range[1])
+  if (filterParams.value.cityCode) {
+    params.cityCode = filterParams.value.cityCode
+  }
+  
+  if (filterParams.value.districtCode) {
+    params.districtCode = filterParams.value.districtCode
+  }
+  
+  // 原有区域ID（保持兼容，仅当值为有效数字时才传递）
+  if (filterParams.value.regionId && !isNaN(Number(filterParams.value.regionId))) {
+    params.regionId = Number(filterParams.value.regionId)
+  }
+  
+  if (filterParams.value.minRent) {
+    params.minRent = Number(filterParams.value.minRent)
+  }
+  
+  if (filterParams.value.maxRent) {
+    params.maxRent = Number(filterParams.value.maxRent)
   }
   
   if (filterParams.value.room) {
-    if (filterParams.value.room === '4+') {
-      params.minRoom = 4
-    } else {
-      params.room = Number(filterParams.value.room)
-    }
+    params.room = Number(filterParams.value.room)
   }
   
   if (filterParams.value.hall) {
@@ -352,12 +361,6 @@ function getFilterParams() {
   }
   
   return params
-}
-
-function handleFilterChange() {
-  pageNum.value = 1
-  loadHouseList()
-  scrollToTop()
 }
 
 function handleSearch() {
@@ -406,8 +409,102 @@ function scrollToTop() {
   padding-bottom: 160px;
 }
 
+.search-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  
+  :deep(.van-search) {
+    flex: 1;
+  }
+  
+  .filter-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    cursor: pointer;
+    
+    &:active {
+      opacity: 0.7;
+    }
+    
+    .filter-text {
+      font-size: 12px;
+      color: #1890ff;
+      margin-top: 2px;
+    }
+  }
+}
+
 .house-content {
   padding: 0 12px;
+}
+
+/* 自定义弹窗样式 */
+.custom-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.custom-popup-content {
+  width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.popup-close {
+  font-size: 24px;
+  color: #999;
+  padding: 8px;
+}
+
+.popup-body {
+  max-height: calc(80vh - 60px);
+  overflow-y: auto;
 }
 
 .loading {
@@ -422,6 +519,36 @@ function scrollToTop() {
 
 .empty {
   padding: 60px 0;
+}
+
+// 搜索栏操作区
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    cursor: pointer;
+    
+    &:active {
+      opacity: 0.7;
+    }
+  }
+  
+  .search-btn {
+    color: #1890ff;
+    font-size: 16px;
+    padding: 6px 10px;
+    cursor: pointer;
+    
+    &:active {
+      opacity: 0.7;
+    }
+  }
 }
 
 // 分页容器

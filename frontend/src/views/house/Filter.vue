@@ -1,5 +1,5 @@
 <template>
-  <div class="filter-page">
+  <div class="filter-page" :class="{ 'filter-popup': asPopup }">
     <van-nav-bar title="筛选" left-arrow @click-left="goBack" right-text="重置" @click-right="resetFilter" />
 
     <van-cell-group>
@@ -274,6 +274,15 @@ import { regionApi } from '@/api/region'
 import { getLocation } from '@/utils/storage'
 import { useAppStore } from '@/stores/app'
 
+const props = defineProps({
+  asPopup: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['confirm', 'cancel'])
+
 const router = useRouter()
 const appStore = useAppStore()
 
@@ -291,6 +300,15 @@ const showSortPicker = ref(false)
 
 const selectedRegion = ref('')
 const selectedRegionId = ref('')
+// 完整的三级区域信息
+const locationInfo = ref({
+  province: '',
+  provinceCode: '',
+  city: '',
+  cityCode: '',
+  district: '',
+  districtCode: ''
+})
 const minRent = ref('')
 const maxRent = ref('')
 
@@ -333,7 +351,7 @@ const generateCountActions = (label) => {
 
 const regionActions = computed(() => [
   { name: '不限', value: '' },
-  ...regions.value.map(r => ({ name: r.name, value: r.id.toString() }))
+  ...regions.value.map(r => ({ name: r.name, value: r.code || r.id.toString() }))
 ])
 
 const priceActions = [
@@ -453,6 +471,9 @@ onMounted(async () => {
   if (location && location.cityCode) {
     currentCityCode.value = location.cityCode
     currentCityName.value = location.city || ''
+    
+    // 初始化完整的三级区域信息
+    updateLocationInfo(location)
   }
   await loadRegions(currentCityCode.value)
   
@@ -461,6 +482,10 @@ onMounted(async () => {
     if (newLocation && newLocation.cityCode && newLocation.cityCode !== currentCityCode.value) {
       currentCityCode.value = newLocation.cityCode
       currentCityName.value = newLocation.city || ''
+      
+      // 更新完整的三级区域信息
+      updateLocationInfo(newLocation)
+      
       await loadRegions(currentCityCode.value)
       // 重置已选择的区域，因为城市变了
       selectedRegion.value = ''
@@ -468,6 +493,22 @@ onMounted(async () => {
     }
   }, { deep: true })
 })
+
+/**
+ * 更新完整的三级区域信息
+ * 
+ * @param {Object} location - 位置对象
+ */
+function updateLocationInfo(location) {
+  locationInfo.value = {
+    province: location.province || '',
+    provinceCode: location.provinceCode || '',
+    city: location.city || '',
+    cityCode: location.cityCode || '',
+    district: '',
+    districtCode: ''
+  }
+}
 
 /**
  * 根据城市编码加载区域列表
@@ -518,6 +559,15 @@ function handleRegionSelect(action) {
   selectedRegionId.value = action.value
   selectedRegion.value = action.name
   showRegionPicker.value = false
+  
+  // 更新区县级区域信息，自动保留上级省市级信息
+  locationInfo.value = {
+    ...locationInfo.value,
+    district: action.name,
+    districtCode: action.value
+  }
+  
+  console.log('已选择区域:', locationInfo.value)
 }
 
 function handlePriceSelect(action) {
@@ -675,6 +725,12 @@ function handleSortSelect(action) {
 function resetFilter() {
   selectedRegion.value = ''
   selectedRegionId.value = ''
+  // 重置区县级信息，保留省市级信息
+  locationInfo.value = {
+    ...locationInfo.value,
+    district: '',
+    districtCode: ''
+  }
   minRent.value = ''
   maxRent.value = ''
   selectedRoom.value = null
@@ -689,7 +745,15 @@ function resetFilter() {
 
 function confirmFilter() {
   const query = {}
+  
+  // 添加完整的三级区域信息
+  if (locationInfo.value.provinceCode) query.provinceCode = locationInfo.value.provinceCode
+  if (locationInfo.value.cityCode) query.cityCode = locationInfo.value.cityCode
+  if (locationInfo.value.districtCode) query.districtCode = locationInfo.value.districtCode
+  
+  // 原有区域ID（保持兼容）
   if (selectedRegionId.value) query.regionId = selectedRegionId.value
+  
   if (minRent.value) query.minRent = minRent.value
   if (maxRent.value) query.maxRent = maxRent.value
   if (selectedRoom.value !== null) query.room = selectedRoom.value
@@ -705,11 +769,19 @@ function confirmFilter() {
     query.sortOrder = order
   }
   
-  router.push({ path: '/house', query })
+  if (props.asPopup) {
+    emit('confirm', query)
+  } else {
+    router.push({ path: '/house', query })
+  }
 }
 
 function goBack() {
-  router.back()
+  if (props.asPopup) {
+    emit('cancel')
+  } else {
+    router.back()
+  }
 }
 </script>
 
@@ -718,6 +790,12 @@ function goBack() {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 100px;
+  
+  &.filter-popup {
+    min-height: 100%;
+    height: 100%;
+    overflow-y: auto;
+  }
 }
 
 .filter-btn {
@@ -728,6 +806,11 @@ function goBack() {
   padding: 16px;
   background-color: #fff;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  
+  .filter-popup & {
+    position: sticky;
+  }
 }
 
 // 自定义价格弹窗样式

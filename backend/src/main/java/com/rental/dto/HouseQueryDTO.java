@@ -15,6 +15,13 @@ public class HouseQueryDTO {
 
     private Long regionId;
 
+    // 三级区域信息
+    private String provinceCode;
+
+    private String cityCode;
+
+    private String districtCode;
+
     private Integer minRoom;
 
     private Integer maxRoom;

@@ -57,7 +57,16 @@ public class HouseServiceImpl implements HouseService {
         if (query.getMaxRent() != null) {
             wrapper.le(HouseEntity::getRent, query.getMaxRent());
         }
-        if (query.getRegionId() != null) {
+        
+        // 三级区域筛选（优先级高于 regionId）
+        if (query.getDistrictCode() != null && !query.getDistrictCode().trim().isEmpty()) {
+            wrapper.eq(HouseEntity::getDistrictCode, query.getDistrictCode());
+        } else if (query.getCityCode() != null && !query.getCityCode().trim().isEmpty()) {
+            wrapper.eq(HouseEntity::getCityCode, query.getCityCode());
+        } else if (query.getProvinceCode() != null && !query.getProvinceCode().trim().isEmpty()) {
+            wrapper.eq(HouseEntity::getProvinceCode, query.getProvinceCode());
+        } else if (query.getRegionId() != null) {
+            // 兼容原有的 regionId 筛选
             wrapper.eq(HouseEntity::getRegionId, query.getRegionId());
         }
         
