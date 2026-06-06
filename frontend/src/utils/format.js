@@ -30,7 +30,8 @@ export function formatHouseType(type) {
   const typeMap = {
     1: '住宅',
     2: '公寓',
-    3: '商铺'
+    3: '商铺',
+    4: '写字楼'
   }
   return typeMap[type] || '未知'
 }
@@ -44,10 +45,19 @@ export function formatDecorationType(type) {
   return typeMap[type] || '未知'
 }
 
-export function formatFloor(floor) {
+export function formatFloor(floor, totalFloor = 0) {
   if (floor <= 0) return '低层'
+  if (floor <= 3) return '低层'
   if (floor <= 6) return '多层'
-  if (floor <= 11) return '小高层'
-  if (floor <= 18) return '高层'
+  if (floor <= 12) return '小高层'
+  if (floor <= 27) return '高层'
   return '超高层'
+}
+
+export function formatRentType(type) {
+  const typeMap = {
+    1: '整租',
+    2: '合租'
+  }
+  return typeMap[type] || '未知'
 }
