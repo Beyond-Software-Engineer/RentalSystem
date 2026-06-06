@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.rental.common.BusinessException;
+import com.rental.common.ValidationUtils;
 import com.rental.dto.HouseQueryDTO;
 import com.rental.entity.FacilityEntity;
 import com.rental.entity.HouseEntity;
@@ -16,6 +17,7 @@ import com.rental.vo.FacilityVO;
 import com.rental.vo.HouseDetailVO;
 import com.rental.vo.HouseSimpleVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class HouseServiceImpl implements HouseService {
 
     private final HouseMapper houseMapper;
@@ -33,6 +36,9 @@ public class HouseServiceImpl implements HouseService {
 
     @Override
     public IPage<HouseSimpleVO> pageHouse(HouseQueryDTO query) {
+        // 服务器端参数验证
+        validateQueryParams(query);
+        
         Page<HouseEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<HouseEntity> wrapper = new LambdaQueryWrapper<>();
@@ -67,11 +73,49 @@ public class HouseServiceImpl implements HouseService {
             }
         }
         
-        if (query.getHouseType() != null) {
-            wrapper.eq(HouseEntity::getHouseType, query.getHouseType());
+        // 厅数量筛选
+        if (query.getHall() != null) {
+            wrapper.eq(HouseEntity::getHall, query.getHall());
         }
+        
+        // 厨数量筛选
+        if (query.getKitchen() != null) {
+            wrapper.eq(HouseEntity::getKitchen, query.getKitchen());
+        }
+        
+        // 卫数量筛选
+        if (query.getToilet() != null) {
+            wrapper.eq(HouseEntity::getToilet, query.getToilet());
+        }
+        
+        // 房屋类型筛选（-1表示"其他"）
+        if (query.getHouseType() != null) {
+            if (query.getHouseType() == -1) {
+                // 其他：排除已定义的类型（1-住宅，2-公寓，3-商铺，4-写字楼）
+                wrapper.notIn(HouseEntity::getHouseType, Arrays.asList(1, 2, 3, 4));
+            } else {
+                wrapper.eq(HouseEntity::getHouseType, query.getHouseType());
+            }
+        }
+        
+        // 租赁方式筛选（-1表示"其他"）
         if (query.getRentType() != null) {
-            wrapper.eq(HouseEntity::getRentType, query.getRentType());
+            if (query.getRentType() == -1) {
+                // 其他：排除已定义的方式（1-整租，2-合租）
+                wrapper.notIn(HouseEntity::getRentType, Arrays.asList(1, 2));
+            } else {
+                wrapper.eq(HouseEntity::getRentType, query.getRentType());
+            }
+        }
+        
+        // 装修类型筛选（-1表示"其他"）
+        if (query.getDecorationType() != null) {
+            if (query.getDecorationType() == -1) {
+                // 其他：排除已定义的类型（1-毛坯，2-简装，3-精装）
+                wrapper.notIn(HouseEntity::getDecorationType, Arrays.asList(1, 2, 3));
+            } else {
+                wrapper.eq(HouseEntity::getDecorationType, query.getDecorationType());
+            }
         }
         if (query.getMinArea() != null) {
             wrapper.ge(HouseEntity::getArea, query.getMinArea());
@@ -154,5 +198,130 @@ public class HouseServiceImpl implements HouseService {
         }
         
         return vo;
+    }
+
+    /**
+     * 验证查询参数
+     * 
+     * @param query 查询参数
+     */
+    private void validateQueryParams(HouseQueryDTO query) {
+        log.info("开始验证房源查询参数: {}", query);
+        
+        // 验证价格区间
+        String priceError = ValidationUtils.validatePriceRange(query.getMinRent(), query.getMaxRent());
+        if (priceError != null) {
+            log.warn("价格区间验证失败: {}", priceError);
+            // 记录异常输入日志
+            ValidationUtils.logInvalidInput("priceRange", 
+                    String.format("minRent=%s, maxRent=%s", query.getMinRent(), query.getMaxRent()), 
+                    priceError);
+            // 可以选择抛出异常或修正参数
+            // 这里选择修正参数，将无效参数置空
+            query.setMinRent(null);
+            query.setMaxRent(null);
+        }
+        
+        // 验证面积区间
+        String areaError = ValidationUtils.validateAreaRange(query.getMinArea(), query.getMaxArea());
+        if (areaError != null) {
+            log.warn("面积区间验证失败: {}", areaError);
+            ValidationUtils.logInvalidInput("areaRange", 
+                    String.format("minArea=%s, maxArea=%s", query.getMinArea(), query.getMaxArea()), 
+                    areaError);
+            query.setMinArea(null);
+            query.setMaxArea(null);
+        }
+        
+        // 验证楼层区间
+        String floorError = ValidationUtils.validateFloorRange(query.getMinFloor(), query.getMaxFloor());
+        if (floorError != null) {
+            log.warn("楼层区间验证失败: {}", floorError);
+            ValidationUtils.logInvalidInput("floorRange", 
+                    String.format("minFloor=%s, maxFloor=%s", query.getMinFloor(), query.getMaxFloor()), 
+                    floorError);
+            query.setMinFloor(null);
+            query.setMaxFloor(null);
+        }
+        
+        // 验证房间数量
+        String roomError = ValidationUtils.validateRoomCount(query.getRoom(), "room");
+        if (roomError != null) {
+            log.warn("房间数量验证失败: {}", roomError);
+            ValidationUtils.logInvalidInput("room", query.getRoom(), roomError);
+            query.setRoom(null);
+        }
+        
+        // 验证厅数量
+        String hallError = ValidationUtils.validateRoomCount(query.getHall(), "hall");
+        if (hallError != null) {
+            log.warn("厅数量验证失败: {}", hallError);
+            ValidationUtils.logInvalidInput("hall", query.getHall(), hallError);
+            query.setHall(null);
+        }
+        
+        // 验证厨数量
+        String kitchenError = ValidationUtils.validateRoomCount(query.getKitchen(), "kitchen");
+        if (kitchenError != null) {
+            log.warn("厨数量验证失败: {}", kitchenError);
+            ValidationUtils.logInvalidInput("kitchen", query.getKitchen(), kitchenError);
+            query.setKitchen(null);
+        }
+        
+        // 验证卫数量
+        String toiletError = ValidationUtils.validateRoomCount(query.getToilet(), "toilet");
+        if (toiletError != null) {
+            log.warn("卫数量验证失败: {}", toiletError);
+            ValidationUtils.logInvalidInput("toilet", query.getToilet(), toiletError);
+            query.setToilet(null);
+        }
+        
+        // 验证分页参数
+        if (query.getPageNum() == null || query.getPageNum() < 1) {
+            log.warn("无效的页码参数: {}, 已修正为1", query.getPageNum());
+            query.setPageNum(1);
+        }
+        if (query.getPageSize() == null || query.getPageSize() < 1) {
+            log.warn("无效的每页条数参数: {}, 已修正为10", query.getPageSize());
+            query.setPageSize(10);
+        }
+        if (query.getPageSize() > 100) {
+            log.warn("每页条数参数过大: {}, 已修正为100", query.getPageSize());
+            ValidationUtils.logPotentialAttack("pageSize", query.getPageSize(), "可能的资源耗尽攻击");
+            query.setPageSize(100);
+        }
+        
+        // 检查是否存在异常输入模式（潜在攻击检测）
+        detectPotentialAttack(query);
+        
+        log.info("查询参数验证完成");
+    }
+
+    /**
+     * 检测潜在攻击行为
+     * 
+     * @param query 查询参数
+     */
+    private void detectPotentialAttack(HouseQueryDTO query) {
+        // 检测极端价格值攻击
+        if (query.getMinRent() != null && query.getMinRent().compareTo(ValidationUtils.PRICE_MAX) > 0) {
+            ValidationUtils.logPotentialAttack("minRent", query.getMinRent(), "极端价格值攻击");
+        }
+        if (query.getMaxRent() != null && query.getMaxRent().compareTo(ValidationUtils.PRICE_MAX) > 0) {
+            ValidationUtils.logPotentialAttack("maxRent", query.getMaxRent(), "极端价格值攻击");
+        }
+        
+        // 检测SQL注入模式（简单检测）
+        if (query.getKeyword() != null) {
+            String keyword = query.getKeyword().toLowerCase();
+            if (keyword.contains("'") || keyword.contains(";") || 
+                keyword.contains("union") || keyword.contains("select") ||
+                keyword.contains("drop") || keyword.contains("insert")) {
+                ValidationUtils.logPotentialAttack("keyword", query.getKeyword(), "可能的SQL注入攻击");
+            }
+        }
+        
+        // 检测大量并发请求的模式（可以结合请求频率限制器）
+        // 这里只做简单记录，实际项目中应该配合限流组件
     }
 }

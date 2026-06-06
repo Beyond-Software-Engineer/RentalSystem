@@ -8,7 +8,7 @@
           <van-icon name="arrow" />
         </template>
         <template #value>
-          {{ selectedRegion || '请选择区域' }}
+          {{ selectedRegion || '全部' }}
         </template>
       </van-cell>
 
@@ -21,12 +21,70 @@
         </template>
       </van-cell>
 
-      <van-cell title="房型" clickable @click="showRoomPicker = true">
+      <!-- 房间结构筛选 -->
+      <van-cell title="室" clickable @click="showRoomPicker = true">
         <template #right-icon>
           <van-icon name="arrow" />
         </template>
         <template #value>
-          {{ selectedRoom || '请选择房型' }}
+          {{ selectedRoomText }}
+        </template>
+      </van-cell>
+
+      <van-cell title="厅" clickable @click="showHallPicker = true">
+        <template #right-icon>
+          <van-icon name="arrow" />
+        </template>
+        <template #value>
+          {{ selectedHallText }}  
+        </template>
+      </van-cell>
+
+      <van-cell title="厨" clickable @click="showKitchenPicker = true">
+        <template #right-icon>
+          <van-icon name="arrow" />
+        </template>
+        <template #value>
+          {{ selectedKitchenText }}  
+        </template>
+      </van-cell>
+
+      <van-cell title="卫" clickable @click="showToiletPicker = true">
+        <template #right-icon>
+          <van-icon name="arrow" />
+        </template>
+        <template #value>
+          {{ selectedToiletText }}  
+        </template>
+      </van-cell>
+
+      <!-- 装修类型筛选 -->
+      <van-cell title="装修类型" clickable @click="showDecorationPicker = true">
+        <template #right-icon>
+          <van-icon name="arrow" />
+        </template>
+        <template #value>
+          {{ selectedDecorationText }}  
+        </template>
+      </van-cell>
+
+      <!-- 租赁方式筛选 -->
+      <van-cell title="租赁方式" clickable @click="showRentTypePicker = true">
+        <template #right-icon>
+          <van-icon name="arrow" />
+        </template>
+        <template #value>
+          {{ selectedRentTypeText }}  
+        </template>
+      </van-cell>
+
+      <!-- 房屋类型筛选 -->
+      <van-cell title="房屋类型" clickable @click="showHouseTypePicker = true">
+        <template #right-icon>
+          <van-icon name="arrow" />
+        </template>
+        <template #value>
+          {{ selectedHouseTypeText }}  
         </template>
       </van-cell>
 
@@ -35,7 +93,7 @@
           <van-icon name="arrow" />
         </template>
         <template #value>
-          {{ selectedSortText }}
+          {{ selectedSortText }}  
         </template>
       </van-cell>
     </van-cell-group>
@@ -44,6 +102,7 @@
       <van-button type="primary" round block @click="confirmFilter">确定筛选</van-button>
     </div>
 
+    <!-- 区域选择 -->
     <van-action-sheet
       v-model:show="showRegionPicker"
       title="选择区域"
@@ -52,6 +111,7 @@
       @select="handleRegionSelect"
     />
 
+    <!-- 价格选择 -->
     <van-action-sheet
       v-model:show="showPricePicker"
       title="选择价格区间"
@@ -60,17 +120,118 @@
       @select="handlePriceSelect"
     />
 
+    <!-- 自定义价格区间弹窗 -->
+    <van-dialog
+      v-model:show="showCustomPriceDialog"
+      title="自定义价格区间"
+      show-cancel-button
+      confirm-button-text="确定"
+      cancel-button-text="取消"
+      @confirm="submitCustomPrice"
+      @cancel="closeCustomPriceDialog"
+    >
+      <div class="custom-price-content">
+        <div class="price-input-row">
+          <div class="price-input-item">
+            <label>最低价格（元/月）</label>
+            <van-field
+              v-model="customMinRent"
+              type="digit"
+              placeholder="请输入最低价格"
+              maxlength="7"
+              @input="validateCustomPrice"
+            />
+          </div>
+          <span class="price-separator">-</span>
+          <div class="price-input-item">
+            <label>最高价格（元/月）</label>
+            <van-field
+              v-model="customMaxRent"
+              type="digit"
+              placeholder="请输入最高价格"
+              maxlength="7"
+              @input="validateCustomPrice"
+            />
+          </div>
+        </div>
+        <div v-if="priceError" class="price-error">
+          <van-icon name="warning-o" class="error-icon" />
+          <span>{{ priceError }}</span>
+        </div>
+        <div class="price-tip">
+          <van-icon name="info-o" class="tip-icon" />
+          <span>价格范围：{{ PRICE_MIN }} - {{ PRICE_MAX.toLocaleString() }} 元/月</span>
+        </div>
+      </div>
+    </van-dialog>
+
+    <!-- 室数量选择 -->
     <van-action-sheet
       v-model:show="showRoomPicker"
-      title="选择房型"
-      :actions="roomActions"
+      title="选择室数量"
+      :actions="roomCountActions"
       cancel-text="取消"
       @select="handleRoomSelect"
     />
 
+    <!-- 厅数量选择 -->
+    <van-action-sheet
+      v-model:show="showHallPicker"
+      title="选择厅数量"
+      :actions="hallCountActions"
+      cancel-text="取消"
+      @select="handleHallSelect"
+    />
+
+    <!-- 厨数量选择 -->
+    <van-action-sheet
+      v-model:show="showKitchenPicker"
+      title="选择厨数量"
+      :actions="kitchenCountActions"
+      cancel-text="取消"
+      @select="handleKitchenSelect"
+    />
+
+    <!-- 卫数量选择 -->
+    <van-action-sheet
+      v-model:show="showToiletPicker"
+      title="选择卫数量"
+      :actions="toiletCountActions"
+      cancel-text="取消"
+      @select="handleToiletSelect"
+    />
+
+    <!-- 装修类型选择 -->
+    <van-action-sheet
+      v-model:show="showDecorationPicker"
+      title="选择装修类型"
+      :actions="decorationActions"
+      cancel-text="取消"
+      @select="handleDecorationSelect"
+    />
+
+    <!-- 租赁方式选择 -->
+    <van-action-sheet
+      v-model:show="showRentTypePicker"
+      title="选择租赁方式"
+      :actions="rentTypeActions"
+      cancel-text="取消"
+      @select="handleRentTypeSelect"
+    />
+
+    <!-- 房屋类型选择 -->
+    <van-action-sheet
+      v-model:show="showHouseTypePicker"
+      title="选择房屋类型"
+      :actions="houseTypeActions"
+      cancel-text="取消"
+      @select="handleHouseTypeSelect"
+    />
+
+    <!-- 排序选择 -->
     <van-action-sheet
       v-model:show="showSortPicker"
-      title="选择排序"
+      title="选择排序方式"
       :actions="sortActions"
       cancel-text="取消"
       @select="handleSortSelect"
@@ -79,26 +240,59 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { NavBar, CellGroup, Cell, Button, ActionSheet, Icon } from 'vant'
+import { NavBar, CellGroup, Cell, Button, ActionSheet, Icon, Dialog, Toast } from 'vant'
 import { regionApi } from '@/api/region'
 
 const router = useRouter()
 
 const showRegionPicker = ref(false)
 const showPricePicker = ref(false)
+const showCustomPriceDialog = ref(false)
 const showRoomPicker = ref(false)
+const showHallPicker = ref(false)
+const showKitchenPicker = ref(false)
+const showToiletPicker = ref(false)
+const showDecorationPicker = ref(false)
+const showRentTypePicker = ref(false)
+const showHouseTypePicker = ref(false)
 const showSortPicker = ref(false)
 
 const selectedRegion = ref('')
 const selectedRegionId = ref('')
 const minRent = ref('')
 const maxRent = ref('')
-const selectedRoom = ref('')
+
+// 自定义价格区间输入
+const customMinRent = ref('')
+const customMaxRent = ref('')
+const priceError = ref('')
+const lastSubmitTime = ref(0)
+
+// 价格限制常量
+const PRICE_MIN = 0
+const PRICE_MAX = 1000000
+const SUBMIT_INTERVAL = 1000
+const selectedRoom = ref(null)
+const selectedHall = ref(null)
+const selectedKitchen = ref(null)
+const selectedToilet = ref(null)
+const selectedDecoration = ref(null)
+const selectedRentType = ref(null)
+const selectedHouseType = ref(null)
 const selectedSort = ref('createTime_desc')
 
 const regions = ref([])
+
+// 生成1-10的选项
+const generateCountActions = (label) => {
+  const actions = [{ name: '全部', value: null }]
+  for (let i = 1; i <= 10; i++) {
+    actions.push({ name: `${i}${label}`, value: i })
+  }
+  return actions
+}
 
 const regionActions = computed(() => [
   { name: '全部', value: '' },
@@ -110,15 +304,40 @@ const priceActions = [
   { name: '2000以下', value: '0-2000' },
   { name: '2000-3000', value: '2000-3000' },
   { name: '3000-5000', value: '3000-5000' },
-  { name: '5000以上', value: '5000-' }
+  { name: '5000以上', value: '5000-' },
+  { name: '自定义', value: 'custom' }
 ]
 
-const roomActions = [
-  { name: '全部', value: '' },
-  { name: '一居室', value: '1' },
-  { name: '两居室', value: '2' },
-  { name: '三居室', value: '3' },
-  { name: '四居及以上', value: '4' }
+const roomCountActions = generateCountActions('室')
+const hallCountActions = generateCountActions('厅')
+const kitchenCountActions = generateCountActions('厨')
+const toiletCountActions = generateCountActions('卫')
+
+// 装修类型选项（1-毛坯，2-简装，3-精装，-1-其他）
+const decorationActions = [
+  { name: '全部', value: null },
+  { name: '毛坯', value: 1 },
+  { name: '简装', value: 2 },
+  { name: '精装', value: 3 },
+  { name: '其他', value: -1 }
+]
+
+// 租赁方式选项（1-整租，2-合租，-1-其他）
+const rentTypeActions = [
+  { name: '全部', value: null },
+  { name: '整租', value: 1 },
+  { name: '合租', value: 2 },
+  { name: '其他', value: -1 }
+]
+
+// 房屋类型选项（1-住宅，2-公寓，3-商铺，4-写字楼，-1-其他）
+const houseTypeActions = [
+  { name: '全部', value: null },
+  { name: '住宅', value: 1 },
+  { name: '公寓', value: 2 },
+  { name: '商铺', value: 3 },
+  { name: '写字楼', value: 4 },
+  { name: '其他', value: -1 }
 ]
 
 const sortActions = [
@@ -129,10 +348,44 @@ const sortActions = [
 ]
 
 const priceText = computed(() => {
-  if (!minRent.value && !maxRent.value) return '请选择价格区间'
+  if (!minRent.value && !maxRent.value) return '全部'
   if (minRent.value && maxRent.value) return `${minRent.value}-${maxRent.value}`
   if (minRent.value) return `${minRent.value}以上`
   return `${maxRent.value}以下`
+})
+
+const selectedRoomText = computed(() => {
+  return selectedRoom.value !== null ? `${selectedRoom.value}室` : '全部'
+})
+
+const selectedHallText = computed(() => {
+  return selectedHall.value !== null ? `${selectedHall.value}厅` : '全部'
+})
+
+const selectedKitchenText = computed(() => {
+  return selectedKitchen.value !== null ? `${selectedKitchen.value}厨` : '全部'
+})
+
+const selectedToiletText = computed(() => {
+  return selectedToilet.value !== null ? `${selectedToilet.value}卫` : '全部'
+})
+
+const selectedDecorationText = computed(() => {
+  if (selectedDecoration.value === null) return '全部'
+  const map = { 1: '毛坯', 2: '简装', 3: '精装', '-1': '其他' }
+  return map[selectedDecoration.value] || '请选择'
+})
+
+const selectedRentTypeText = computed(() => {
+  if (selectedRentType.value === null) return '全部'
+  const map = { 1: '整租', 2: '合租', '-1': '其他' }
+  return map[selectedRentType.value] || '请选择'
+})
+
+const selectedHouseTypeText = computed(() => {
+  if (selectedHouseType.value === null) return '全部'
+  const map = { 1: '住宅', 2: '公寓', 3: '商铺', 4: '写字楼', '-1': '其他' }
+  return map[selectedHouseType.value] || '请选择'
 })
 
 const selectedSortText = computed(() => {
@@ -168,17 +421,147 @@ function handlePriceSelect(action) {
   if (!action.value) {
     minRent.value = ''
     maxRent.value = ''
+    showPricePicker.value = false
+  } else if (action.value === 'custom') {
+    // 打开自定义价格弹窗
+    customMinRent.value = minRent.value || ''
+    customMaxRent.value = maxRent.value || ''
+    priceError.value = ''
+    showPricePicker.value = false
+    showCustomPriceDialog.value = true
   } else {
     const range = action.value.split('-')
     minRent.value = range[0]
     maxRent.value = range[1] || ''
+    showPricePicker.value = false
   }
-  showPricePicker.value = false
 }
 
+// 自定义价格验证
+function validateCustomPrice() {
+  const min = customMinRent.value.trim()
+  const max = customMaxRent.value.trim()
+  
+  // 检查输入是否为空（允许只填一个）
+  if (!min && !max) {
+    priceError.value = '请至少输入一个价格'
+    return false
+  }
+  
+  // 验证最小值
+  if (min) {
+    if (!/^\d+$/.test(min)) {
+      priceError.value = '最低价格必须为数字'
+      return false
+    }
+    const minNum = parseInt(min)
+    if (minNum < PRICE_MIN) {
+      priceError.value = `最低价格不能小于 ${PRICE_MIN}`
+      return false
+    }
+    if (minNum > PRICE_MAX) {
+      priceError.value = `最低价格不能大于 ${PRICE_MAX.toLocaleString()}`
+      return false
+    }
+  }
+  
+  // 验证最大值
+  if (max) {
+    if (!/^\d+$/.test(max)) {
+      priceError.value = '最高价格必须为数字'
+      return false
+    }
+    const maxNum = parseInt(max)
+    if (maxNum < PRICE_MIN) {
+      priceError.value = `最高价格不能小于 ${PRICE_MIN}`
+      return false
+    }
+    if (maxNum > PRICE_MAX) {
+      priceError.value = `最高价格不能大于 ${PRICE_MAX.toLocaleString()}`
+      return false
+    }
+  }
+  
+  // 验证最小值小于最大值
+  if (min && max) {
+    const minNum = parseInt(min)
+    const maxNum = parseInt(max)
+    if (minNum >= maxNum) {
+      priceError.value = '最低价格必须小于最高价格'
+      return false
+    }
+  }
+  
+  priceError.value = ''
+  return true
+}
+
+// 提交自定义价格
+function submitCustomPrice() {
+  // 输入频率限制
+  const now = Date.now()
+  if (now - lastSubmitTime.value < SUBMIT_INTERVAL) {
+    Toast('操作过于频繁，请稍后再试')
+    return
+  }
+  
+  if (!validateCustomPrice()) {
+    return
+  }
+  
+  minRent.value = customMinRent.value
+  maxRent.value = customMaxRent.value
+  lastSubmitTime.value = now
+  showCustomPriceDialog.value = false
+  Toast('设置成功')
+}
+
+// 关闭自定义价格弹窗
+function closeCustomPriceDialog() {
+  showCustomPriceDialog.value = false
+  priceError.value = ''
+}
+
+// 监听输入变化，实时验证
+watch([customMinRent, customMaxRent], () => {
+  if (customMinRent.value || customMaxRent.value) {
+    validateCustomPrice()
+  }
+})
+
 function handleRoomSelect(action) {
-  selectedRoom.value = action.value ? action.name : ''
+  selectedRoom.value = action.value
   showRoomPicker.value = false
+}
+
+function handleHallSelect(action) {
+  selectedHall.value = action.value
+  showHallPicker.value = false
+}
+
+function handleKitchenSelect(action) {
+  selectedKitchen.value = action.value
+  showKitchenPicker.value = false
+}
+
+function handleToiletSelect(action) {
+  selectedToilet.value = action.value
+  showToiletPicker.value = false
+}
+
+function handleDecorationSelect(action) {
+  selectedDecoration.value = action.value
+  showDecorationPicker.value = false
+}
+
+function handleRentTypeSelect(action) {
+  selectedRentType.value = action.value
+  showRentTypePicker.value = false
+}
+
+function handleHouseTypeSelect(action) {
+  selectedHouseType.value = action.value
+  showHouseTypePicker.value = false
 }
 
 function handleSortSelect(action) {
@@ -191,7 +574,13 @@ function resetFilter() {
   selectedRegionId.value = ''
   minRent.value = ''
   maxRent.value = ''
-  selectedRoom.value = ''
+  selectedRoom.value = null
+  selectedHall.value = null
+  selectedKitchen.value = null
+  selectedToilet.value = null
+  selectedDecoration.value = null
+  selectedRentType.value = null
+  selectedHouseType.value = null
   selectedSort.value = 'createTime_desc'
 }
 
@@ -200,7 +589,13 @@ function confirmFilter() {
   if (selectedRegionId.value) query.regionId = selectedRegionId.value
   if (minRent.value) query.minRent = minRent.value
   if (maxRent.value) query.maxRent = maxRent.value
-  if (selectedRoom.value) query.room = selectedRoom.value
+  if (selectedRoom.value !== null) query.room = selectedRoom.value
+  if (selectedHall.value !== null) query.hall = selectedHall.value
+  if (selectedKitchen.value !== null) query.kitchen = selectedKitchen.value
+  if (selectedToilet.value !== null) query.toilet = selectedToilet.value
+  if (selectedDecoration.value !== null) query.decorationType = selectedDecoration.value
+  if (selectedRentType.value !== null) query.rentType = selectedRentType.value
+  if (selectedHouseType.value !== null) query.houseType = selectedHouseType.value
   if (selectedSort.value) {
     const [field, order] = selectedSort.value.split('_')
     query.sortField = field
@@ -230,5 +625,71 @@ function goBack() {
   padding: 16px;
   background-color: #fff;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+// 自定义价格弹窗样式
+.custom-price-content {
+  padding: 10px 0;
+}
+
+.price-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.price-input-item {
+  flex: 1;
+  
+  label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  
+  :deep(.van-field) {
+    border-radius: 6px;
+    border: 1px solid #ebedf0;
+  }
+}
+
+.price-separator {
+  font-size: 20px;
+  color: #999;
+  padding: 0 5px;
+}
+
+.price-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ee0a24;
+  font-size: 12px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: #fff2f0;
+  border-radius: 4px;
+  
+  .error-icon {
+    font-size: 14px;
+  }
+}
+
+.price-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #999;
+  font-size: 12px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: #f7f8fa;
+  border-radius: 4px;
+  
+  .tip-icon {
+    font-size: 14px;
+  }
 }
 </style>

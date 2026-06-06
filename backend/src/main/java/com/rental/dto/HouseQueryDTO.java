@@ -23,6 +23,10 @@ public class HouseQueryDTO {
 
     private Integer hall;
 
+    private Integer kitchen;
+
+    private Integer toilet;
+
     private Integer houseType;
 
     private Integer rentType;

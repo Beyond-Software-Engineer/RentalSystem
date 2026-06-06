@@ -105,11 +105,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Search, Empty, Loading, DropdownMenu, DropdownItem, Button, Icon, Field, showToast } from 'vant'
 import HouseCard from '@/components/HouseCard.vue'
 import PageSizeSelector from '@/components/PageSizeSelector.vue'
 import { houseApi } from '@/api/house'
 import { regionApi } from '@/api/region'
+
+const route = useRoute()
+const router = useRouter()
 
 const searchText = ref('')
 const loading = ref(true)
@@ -132,7 +136,15 @@ const pageSizeOptions = [
 const filterParams = ref({
   region: '',
   price: '',
-  room: ''
+  room: '',
+  hall: '',
+  kitchen: '',
+  toilet: '',
+  decorationType: '',
+  rentType: '',
+  houseType: '',
+  sortField: '',
+  sortOrder: ''
 })
 
 const priceOptions = [
@@ -199,12 +211,58 @@ const listContainer = ref(null)
 
 onMounted(async () => {
   await loadRegions()
+  // 处理从筛选页面传递的参数
+  handleRouteParams()
   await loadHouseList()
 })
 
 onUnmounted(() => {
   // 清理
 })
+
+// 处理路由参数
+function handleRouteParams() {
+  const query = route.query
+  
+  if (query.regionId) {
+    filterParams.value.region = query.regionId
+  }
+  if (query.minRent || query.maxRent) {
+    const min = query.minRent || '0'
+    const max = query.maxRent || '99999'
+    filterParams.value.price = `${min}-${max}`
+  }
+  if (query.room) {
+    filterParams.value.room = query.room
+  }
+  if (query.hall) {
+    filterParams.value.hall = query.hall
+  }
+  if (query.kitchen) {
+    filterParams.value.kitchen = query.kitchen
+  }
+  if (query.toilet) {
+    filterParams.value.toilet = query.toilet
+  }
+  if (query.decorationType) {
+    filterParams.value.decorationType = query.decorationType
+  }
+  if (query.rentType) {
+    filterParams.value.rentType = query.rentType
+  }
+  if (query.houseType) {
+    filterParams.value.houseType = query.houseType
+  }
+  if (query.sortField) {
+    filterParams.value.sortField = query.sortField
+  }
+  if (query.sortOrder) {
+    filterParams.value.sortOrder = query.sortOrder
+  }
+  if (query.keyword) {
+    searchText.value = query.keyword
+  }
+}
 
 async function loadRegions() {
   try {
@@ -259,6 +317,38 @@ function getFilterParams() {
     } else {
       params.room = Number(filterParams.value.room)
     }
+  }
+  
+  if (filterParams.value.hall) {
+    params.hall = Number(filterParams.value.hall)
+  }
+  
+  if (filterParams.value.kitchen) {
+    params.kitchen = Number(filterParams.value.kitchen)
+  }
+  
+  if (filterParams.value.toilet) {
+    params.toilet = Number(filterParams.value.toilet)
+  }
+  
+  if (filterParams.value.decorationType) {
+    params.decorationType = Number(filterParams.value.decorationType)
+  }
+  
+  if (filterParams.value.rentType) {
+    params.rentType = Number(filterParams.value.rentType)
+  }
+  
+  if (filterParams.value.houseType) {
+    params.houseType = Number(filterParams.value.houseType)
+  }
+  
+  if (filterParams.value.sortField) {
+    params.sortField = filterParams.value.sortField
+  }
+  
+  if (filterParams.value.sortOrder) {
+    params.sortOrder = filterParams.value.sortOrder
   }
   
   return params
