@@ -86,7 +86,7 @@ CREATE TABLE biz_house (
     area DECIMAL(8,2) NOT NULL COMMENT '面积(㎡)',
     region_id BIGINT NOT NULL COMMENT '区域ID',
     address VARCHAR(255) NOT NULL COMMENT '详细地址',
-    house_type TINYINT NOT NULL COMMENT '房屋类型：1-住宅，2-公寓，3-商铺',
+    house_type TINYINT NOT NULL COMMENT '房屋类型：1-住宅，2-公寓，3-商铺，4-写字楼',
     status TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0-待租，1-已租，2-已下架',
     facilities VARCHAR(1000) DEFAULT NULL COMMENT '房屋配套JSON',
     three_d_url VARCHAR(500) DEFAULT NULL COMMENT '三维展示URL',
