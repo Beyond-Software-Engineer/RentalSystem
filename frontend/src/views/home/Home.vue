@@ -182,6 +182,7 @@ function goNews() {
 .home-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top));
   position: sticky;
   top: 0;
   z-index: 10;

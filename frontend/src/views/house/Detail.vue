@@ -68,7 +68,13 @@ const house = ref(null)
 
 const images = computed(() => {
   if (!house.value?.images) return []
-  return house.value.images.split(',')
+  if (Array.isArray(house.value.images)) {
+    return house.value.images
+  }
+  if (typeof house.value.images === 'string') {
+    return house.value.images.split(',')
+  }
+  return []
 })
 
 const facilityText = computed(() => {
