@@ -11,5 +11,5 @@ public interface HouseService {
 
     HouseDetailVO getHouseDetail(Long id);
 
-    IPage<HouseSimpleVO> getRecommendHouse();
+    IPage<HouseSimpleVO> getRecommendHouse(String city);
 }

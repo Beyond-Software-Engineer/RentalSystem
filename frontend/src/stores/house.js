@@ -41,8 +41,8 @@ export const useHouseStore = defineStore('house', () => {
     }
   }
 
-  async function fetchRecommend() {
-    const { data } = await houseApi.getRecommendHouse()
+  async function fetchRecommend(cityCode = null) {
+    const { data } = await houseApi.getRecommendHouse(cityCode)
     recommendList.value = data.records
   }
 

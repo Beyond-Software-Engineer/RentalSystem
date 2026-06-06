@@ -225,20 +225,6 @@ CREATE TABLE biz_token (
 -- 初始化数据
 -- =============================================
 
--- 插入区域数据
-INSERT INTO biz_region (name, code, city, sort) VALUES
-('朝阳区', 'BJ_CY', '北京', 1),
-('海淀区', 'BJ_HD', '北京', 2),
-('东城区', 'BJ_DC', '北京', 3),
-('西城区', 'BJ_XC', '北京', 4),
-('丰台区', 'BJ_FT', '北京', 5),
-('石景山区', 'BJ_SJS', '北京', 6),
-('浦东新区', 'SH_PD', '上海', 1),
-('黄浦区', 'SH_HP', '上海', 2),
-('静安区', 'SH_JA', '上海', 3),
-('徐汇区', 'SH_XH', '上海', 4),
-('长宁区', 'SH_CN', '上海', 5);
-
 -- 插入设施数据
 INSERT INTO biz_facility (name, icon, category, sort) VALUES
 ('电视', 'icon-tv', '家电', 1),
@@ -261,13 +247,6 @@ INSERT INTO biz_facility (name, icon, category, sort) VALUES
 ('暖气', 'icon-heating', '其他', 5),
 ('停车位', 'icon-parking', '其他', 6);
 
--- 插入测试房源数据
-INSERT INTO biz_house (title, room, hall, kitchen, toilet, decoration_type, rent, deposit, rent_type, floor, total_floor, area, region_id, address, house_type, status, facilities, description) VALUES
-('朝阳公园旁精装修两居室', 2, 1, 1, 1, 3, 6500.00, 13000.00, 1, 15, 28, 85.50, 1, '朝阳区朝阳公园南路XX号', 1, 0, '[1,2,3,4,5,8,9,10,14]', '房屋精装修，采光好，交通便利，周边配套设施齐全。'),
-('海淀区学院路学区房出租', 2, 2, 1, 1, 2, 5800.00, 11600.00, 1, 6, 18, 92.00, 2, '海淀区学院路XX号', 1, 0, '[1,2,3,4,5,8,9,10,14]', '临近多所高校，学习氛围浓厚，适合学生陪读。'),
-('东城区胡同里老北京四合院', 3, 2, 1, 2, 2, 12000.00, 24000.00, 1, 1, 2, 120.00, 3, '东城区南锣鼓巷XX号', 1, 0, '[1,2,3,4,5,8,9,10,11,15]', '传统四合院，闹中取静，感受老北京风情。'),
-('浦东陆家嘴金融区公寓', 1, 1, 1, 1, 3, 8500.00, 17000.00, 2, 25, 30, 55.00, 6, '浦东新区陆家嘴环路XX号', 2, 0, '[1,2,3,4,5,6,7,8,9,10,14]', '高层景观公寓，俯瞰黄浦江，拎包入住。'),
-('静安区南京西路精品单间', 1, 0, 0, 1, 3, 4200.00, 8400.00, 2, 10, 20, 35.00, 7, '静安区南京西路XX号', 2, 0, '[1,2,3,4,5,8,10,14]', '市中心黄金地段，出行便利，商业配套完善。');
 
 -- 插入房源设施关联
 INSERT INTO biz_house_facility (house_id, facility_id) VALUES
@@ -313,3 +292,4 @@ CREATE EVENT evt_clean_expired_sms_code
 ON SCHEDULE EVERY 1 DAY
 STARTS CURRENT_TIMESTAMP
 DO CALL clean_expired_sms_code();
+

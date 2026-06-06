@@ -23,6 +23,12 @@ public class HouseDetailVO {
     private BigDecimal area;
     private Long regionId;
     private String regionName;
+    private String provinceCode;
+    private String provinceName;
+    private String cityCode;
+    private String cityName;
+    private String districtCode;
+    private String districtName;
     private String address;
     private Integer houseType;
     private String facilities;

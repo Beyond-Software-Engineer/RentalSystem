@@ -178,12 +178,24 @@ public class HouseServiceImpl implements HouseService {
     }
 
     @Override
-    public IPage<HouseSimpleVO> getRecommendHouse() {
+    public IPage<HouseSimpleVO> getRecommendHouse(String cityCode) {
         Page<HouseEntity> page = new Page<>(1, 6);
         
         LambdaQueryWrapper<HouseEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(HouseEntity::getStatus, 0)
                .orderByDesc(HouseEntity::getCreateTime);
+
+        // 如果提供了城市编码，则按城市筛选推荐房源
+        if (cityCode != null && !cityCode.trim().isEmpty()) {
+            try {
+                // 直接使用house表中的cityCode字段进行筛选
+                wrapper.eq(HouseEntity::getCityCode, cityCode);
+                log.info("按城市编码 {} 筛选推荐房源", cityCode);
+            } catch (Exception e) {
+                log.error("按城市筛选推荐房源失败: {}", e.getMessage());
+                // 继续返回默认推荐，不影响用户体验
+            }
+        }
 
         IPage<HouseEntity> entityPage = houseMapper.selectPage(page, wrapper);
 

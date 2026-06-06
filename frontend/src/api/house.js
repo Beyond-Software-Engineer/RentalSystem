@@ -9,7 +9,7 @@ export const houseApi = {
     return request.get(`/house/${id}`)
   },
 
-  getRecommendHouse: () => {
-    return request.get('/house/recommend')
+  getRecommendHouse: (cityCode) => {
+    return request.get('/house/recommend', { params: { cityCode } })
   }
 }

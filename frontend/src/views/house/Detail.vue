@@ -73,7 +73,9 @@
           <span>位置信息</span>
         </div>
       </template>
-      <van-cell title="所在区域" :value="house.regionName || '未知区域'" />
+      <van-cell title="所在省份" :value="house.provinceName || '未知'" />
+      <van-cell title="所在城市" :value="house.cityName || '未知'" />
+      <van-cell title="所在区域" :value="house.districtName || house.regionName || '未知区域'" />
       <van-cell title="详细地址" :value="house.address" />
     </van-cell-group>
 

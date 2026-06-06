@@ -45,14 +45,25 @@
       <div class="section-header">
         <div class="section-title-group">
           <span class="section-title">推荐房源</span>
-          <span class="section-subtitle">为您精选优质好房</span>
+          <span class="section-subtitle">{{ location.city || '为您精选' }}优质好房</span>
         </div>
         <div class="section-more" @click="goHouseList">
           <span>查看更多</span>
           <van-icon name="arrow" size="14" />
         </div>
       </div>
-      <div class="house-list">
+      
+      <!-- 加载状态 -->
+      <van-loading v-if="recommendLoading" class="recommend-loading" />
+      
+      <!-- 空状态 -->
+      <div v-else-if="recommendList.length === 0" class="empty-state">
+        <van-empty description="该区域暂无房源，为您推荐其他优质房源" />
+        <van-button type="primary" size="small" @click="goHouseList">查看全部房源</van-button>
+      </div>
+      
+      <!-- 房源列表 -->
+      <div v-else class="house-list">
         <HouseCard v-for="house in recommendList" :key="house.id" :house="house" />
       </div>
     </div>
@@ -88,11 +99,12 @@ import NewsCard from '@/components/NewsCard.vue'
 import LocationSelector from '@/components/LocationSelector.vue'
 import { useHouseStore } from '@/stores/house'
 import { newsApi } from '@/api/news'
-import { getLocation } from '@/utils/storage'
+import { getLocation, setLocation } from '@/utils/storage'
 
 const router = useRouter()
 const searchText = ref('')
 const loading = ref(true)
+const recommendLoading = ref(false)
 
 // 从本地存储读取位置信息，如果不存在则使用默认值
 const storedLocation = getLocation()
@@ -132,8 +144,7 @@ onMounted(async () => {
 async function loadData() {
   loading.value = true
   try {
-    await houseStore.fetchRecommend()
-    recommendList.value = houseStore.recommendList.slice(0, 3)
+    await loadRecommendHouse()
 
     const { data } = await newsApi.pageNews({ pageNum: 1, pageSize: 3 })
     newsList.value = data.records
@@ -141,6 +152,19 @@ async function loadData() {
     console.error('加载数据失败', error)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadRecommendHouse() {
+  recommendLoading.value = true
+  try {
+    const cityCode = location.value.cityCode
+    await houseStore.fetchRecommend(cityCode)
+    recommendList.value = houseStore.recommendList.slice(0, 6)
+  } catch (error) {
+    console.error('加载推荐房源失败', error)
+  } finally {
+    recommendLoading.value = false
   }
 }
 
@@ -162,7 +186,11 @@ function handleQuickClick(item) {
 
 function handleLocationChange(val) {
   console.log('位置已变更:', val)
-  // 可以在这里刷新房源列表或其他需要根据位置更新的内容
+  location.value = val
+  // 保存位置到本地存储
+  setLocation(val)
+  // 实时更新推荐房源
+  loadRecommendHouse()
 }
 
 function goHouseList() {
@@ -338,10 +366,28 @@ function goNews() {
 
   .house-list {
     padding: 12px 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
   .news-list {
     padding: 12px 16px;
+  }
+
+  .recommend-loading {
+    display: flex;
+    justify-content: center;
+    padding: 30px 0;
+  }
+
+  .empty-state {
+    padding: 30px 16px;
+    text-align: center;
+
+    :deep(.van-empty) {
+      margin-bottom: 16px;
+    }
   }
 }
 

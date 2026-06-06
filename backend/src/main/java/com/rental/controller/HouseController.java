@@ -45,8 +45,9 @@ public class HouseController {
     }
 
     @GetMapping("/recommend")
-    public CommonResponse<PageResult<HouseSimpleVO>> getRecommendHouse() {
-        IPage<HouseSimpleVO> page = houseService.getRecommendHouse();
+    public CommonResponse<PageResult<HouseSimpleVO>> getRecommendHouse(
+            @RequestParam(required = false) String cityCode) {
+        IPage<HouseSimpleVO> page = houseService.getRecommendHouse(cityCode);
         return CommonResponse.success(new PageResult<>(
             page.getTotal(),
             page.getSize(),

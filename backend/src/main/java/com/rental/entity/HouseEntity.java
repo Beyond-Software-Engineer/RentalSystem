@@ -42,6 +42,18 @@ public class HouseEntity implements Serializable {
 
     private Long regionId;
 
+    private String provinceCode;
+
+    private String provinceName;
+
+    private String cityCode;
+
+    private String cityName;
+
+    private String districtCode;
+
+    private String districtName;
+
     private String address;
 
     private Integer houseType;

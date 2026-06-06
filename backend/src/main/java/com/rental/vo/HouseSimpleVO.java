@@ -22,6 +22,12 @@ public class HouseSimpleVO {
     private BigDecimal area;
     private Long regionId;
     private String regionName;
+    private String provinceCode;
+    private String provinceName;
+    private String cityCode;
+    private String cityName;
+    private String districtCode;
+    private String districtName;
     private Integer houseType;
     private String coverImage;
     private String facilities;
