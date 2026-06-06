@@ -8,7 +8,9 @@
           <van-icon name="arrow" />
         </template>
         <template #value>
-          {{ selectedRegion || '全部' }}
+          <span v-if="regionLoading" class="loading-text">加载中...</span>
+          <span v-else-if="regionLoadError" class="error-text">加载失败</span>
+          <span v-else>{{ selectedRegion || '不限' }}</span>
         </template>
       </van-cell>
 
@@ -105,11 +107,36 @@
     <!-- 区域选择 -->
     <van-action-sheet
       v-model:show="showRegionPicker"
-      title="选择区域"
+      :title="regionPickerTitle"
       :actions="regionActions"
       cancel-text="取消"
       @select="handleRegionSelect"
-    />
+    >
+      <template #description>
+        <div class="region-picker-desc">
+          <van-icon name="location-o" size="14" color="#667eea" />
+          <span>当前城市：{{ currentCityName || '定位中...' }}</span>
+        </div>
+      </template>
+      <template #default>
+        <div v-if="regionActions.length <= 1" class="region-empty-state">
+          <van-empty
+            :image="regionLoadError ? 'error' : 'search'"
+            :description="regionLoadError ? '区域加载失败，请检查网络后重试' : '该城市暂无区域数据'"
+          />
+          <van-button 
+            v-if="regionLoadError" 
+            type="primary" 
+            size="small" 
+            round 
+            @click="retryLoadRegions"
+            class="retry-btn"
+          >
+            重新加载
+          </van-button>
+        </div>
+      </template>
+    </van-action-sheet>
 
     <!-- 价格选择 -->
     <van-action-sheet
@@ -242,10 +269,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { NavBar, CellGroup, Cell, Button, ActionSheet, Icon, Dialog, Toast } from 'vant'
+import { NavBar, CellGroup, Cell, Button, ActionSheet, Icon, Dialog, Toast, Empty, showToast, showFailToast } from 'vant'
 import { regionApi } from '@/api/region'
+import { getLocation } from '@/utils/storage'
+import { useAppStore } from '@/stores/app'
 
 const router = useRouter()
+const appStore = useAppStore()
 
 const showRegionPicker = ref(false)
 const showPricePicker = ref(false)
@@ -263,6 +293,12 @@ const selectedRegion = ref('')
 const selectedRegionId = ref('')
 const minRent = ref('')
 const maxRent = ref('')
+
+// 区域加载状态
+const regionLoading = ref(false)
+const regionLoadError = ref(false)
+const currentCityName = ref('')
+const currentCityCode = ref('110100')
 
 // 自定义价格区间输入
 const customMinRent = ref('')
@@ -285,22 +321,23 @@ const selectedSort = ref('createTime_desc')
 
 const regions = ref([])
 
-// 生成1-10的选项
+// 生成0-5的选项，并添加"其他"选项
 const generateCountActions = (label) => {
-  const actions = [{ name: '全部', value: null }]
-  for (let i = 1; i <= 10; i++) {
+  const actions = [{ name: '不限', value: null }]
+  for (let i = 0; i <= 5; i++) {
     actions.push({ name: `${i}${label}`, value: i })
   }
+  actions.push({ name: '其他', value: -1 })
   return actions
 }
 
 const regionActions = computed(() => [
-  { name: '全部', value: '' },
+  { name: '不限', value: '' },
   ...regions.value.map(r => ({ name: r.name, value: r.id.toString() }))
 ])
 
 const priceActions = [
-  { name: '全部', value: '' },
+  { name: '不限', value: '' },
   { name: '2000以下', value: '0-2000' },
   { name: '2000-3000', value: '2000-3000' },
   { name: '3000-5000', value: '3000-5000' },
@@ -313,31 +350,28 @@ const hallCountActions = generateCountActions('厅')
 const kitchenCountActions = generateCountActions('厨')
 const toiletCountActions = generateCountActions('卫')
 
-// 装修类型选项（1-毛坯，2-简装，3-精装，-1-其他）
+// 装修类型选项（1-毛坯，2-简装，3-精装）
 const decorationActions = [
-  { name: '全部', value: null },
+  { name: '不限', value: null },
   { name: '毛坯', value: 1 },
   { name: '简装', value: 2 },
-  { name: '精装', value: 3 },
-  { name: '其他', value: -1 }
+  { name: '精装', value: 3 }
 ]
 
-// 租赁方式选项（1-整租，2-合租，-1-其他）
+// 租赁方式选项（1-整租，2-合租）
 const rentTypeActions = [
-  { name: '全部', value: null },
+  { name: '不限', value: null },
   { name: '整租', value: 1 },
-  { name: '合租', value: 2 },
-  { name: '其他', value: -1 }
+  { name: '合租', value: 2 }
 ]
 
-// 房屋类型选项（1-住宅，2-公寓，3-商铺，4-写字楼，-1-其他）
+// 房屋类型选项（1-住宅，2-公寓，3-商铺，4-写字楼）
 const houseTypeActions = [
-  { name: '全部', value: null },
+  { name: '不限', value: null },
   { name: '住宅', value: 1 },
   { name: '公寓', value: 2 },
   { name: '商铺', value: 3 },
-  { name: '写字楼', value: 4 },
-  { name: '其他', value: -1 }
+  { name: '写字楼', value: 4 }
 ]
 
 const sortActions = [
@@ -348,44 +382,59 @@ const sortActions = [
 ]
 
 const priceText = computed(() => {
-  if (!minRent.value && !maxRent.value) return '全部'
+  if (!minRent.value && !maxRent.value) return '不限'
   if (minRent.value && maxRent.value) return `${minRent.value}-${maxRent.value}`
   if (minRent.value) return `${minRent.value}以上`
   return `${maxRent.value}以下`
 })
 
 const selectedRoomText = computed(() => {
-  return selectedRoom.value !== null ? `${selectedRoom.value}室` : '全部'
+  if (selectedRoom.value === null) return '不限'
+  if (selectedRoom.value === -1) return '其他'
+  return `${selectedRoom.value}室`
 })
 
 const selectedHallText = computed(() => {
-  return selectedHall.value !== null ? `${selectedHall.value}厅` : '全部'
+  if (selectedHall.value === null) return '不限'
+  if (selectedHall.value === -1) return '其他'
+  return `${selectedHall.value}厅`
 })
 
 const selectedKitchenText = computed(() => {
-  return selectedKitchen.value !== null ? `${selectedKitchen.value}厨` : '全部'
+  if (selectedKitchen.value === null) return '不限'
+  if (selectedKitchen.value === -1) return '其他'
+  return `${selectedKitchen.value}厨`
 })
 
 const selectedToiletText = computed(() => {
-  return selectedToilet.value !== null ? `${selectedToilet.value}卫` : '全部'
+  if (selectedToilet.value === null) return '不限'
+  if (selectedToilet.value === -1) return '其他'
+  return `${selectedToilet.value}卫`
 })
 
 const selectedDecorationText = computed(() => {
-  if (selectedDecoration.value === null) return '全部'
-  const map = { 1: '毛坯', 2: '简装', 3: '精装', '-1': '其他' }
+  if (selectedDecoration.value === null) return '不限'
+  const map = { 1: '毛坯', 2: '简装', 3: '精装' }
   return map[selectedDecoration.value] || '请选择'
 })
 
 const selectedRentTypeText = computed(() => {
-  if (selectedRentType.value === null) return '全部'
-  const map = { 1: '整租', 2: '合租', '-1': '其他' }
+  if (selectedRentType.value === null) return '不限'
+  const map = { 1: '整租', 2: '合租' }
   return map[selectedRentType.value] || '请选择'
 })
 
 const selectedHouseTypeText = computed(() => {
-  if (selectedHouseType.value === null) return '全部'
-  const map = { 1: '住宅', 2: '公寓', 3: '商铺', 4: '写字楼', '-1': '其他' }
+  if (selectedHouseType.value === null) return '不限'
+  const map = { 1: '住宅', 2: '公寓', 3: '商铺', 4: '写字楼' }
   return map[selectedHouseType.value] || '请选择'
+})
+
+// 区域选择弹窗标题
+const regionPickerTitle = computed(() => {
+  if (regionLoading.value) return '加载中...'
+  if (regionLoadError.value) return '加载失败'
+  return `选择区域 (${currentCityName.value || '未知城市'})`
 })
 
 const selectedSortText = computed(() => {
@@ -399,16 +448,70 @@ const selectedSortText = computed(() => {
 })
 
 onMounted(async () => {
-  await loadRegions()
+  // 获取位置信息（优先从全局状态，其次从本地存储）
+  const location = appStore.currentLocation || getLocation()
+  if (location && location.cityCode) {
+    currentCityCode.value = location.cityCode
+    currentCityName.value = location.city || ''
+  }
+  await loadRegions(currentCityCode.value)
+  
+  // 监听全局位置变化
+  watch(() => appStore.currentLocation, async (newLocation) => {
+    if (newLocation && newLocation.cityCode && newLocation.cityCode !== currentCityCode.value) {
+      currentCityCode.value = newLocation.cityCode
+      currentCityName.value = newLocation.city || ''
+      await loadRegions(currentCityCode.value)
+      // 重置已选择的区域，因为城市变了
+      selectedRegion.value = ''
+      selectedRegionId.value = ''
+    }
+  }, { deep: true })
 })
 
-async function loadRegions() {
+/**
+ * 根据城市编码加载区域列表
+ *
+ * @param {string} cityCode - 城市编码
+ */
+async function loadRegions(cityCode) {
+  regionLoading.value = true
+  regionLoadError.value = false
+  
   try {
-    const { data } = await regionApi.listRegions()
-    regions.value = data
+    const { data } = await regionApi.listRegionsByCity(cityCode)
+    regions.value = data || []
+    
+    // 不显示Toast提示，只更新UI状态
+    if (regions.value.length === 0) {
+      console.warn('该城市暂无区域数据')
+    }
   } catch (error) {
     console.error('加载区域失败', error)
+    regionLoadError.value = true
+    regions.value = []
+    
+    // 如果按城市查询失败，回退到查询所有区域
+    try {
+      const { data } = await regionApi.listRegions()
+      regions.value = data || []
+      if (regions.value.length > 0) {
+        regionLoadError.value = false
+      }
+    } catch (fallbackError) {
+      console.error('回退加载区域也失败', fallbackError)
+    }
+  } finally {
+    regionLoading.value = false
   }
+}
+
+/**
+ * 重新加载区域列表
+ */
+async function retryLoadRegions() {
+  showToast('正在重新加载...')
+  await loadRegions(currentCityCode.value)
 }
 
 function handleRegionSelect(action) {
@@ -501,7 +604,7 @@ function submitCustomPrice() {
   // 输入频率限制
   const now = Date.now()
   if (now - lastSubmitTime.value < SUBMIT_INTERVAL) {
-    Toast('操作过于频繁，请稍后再试')
+    showFailToast('操作过于频繁，请稍后再试')
     return
   }
   
@@ -513,7 +616,7 @@ function submitCustomPrice() {
   maxRent.value = customMaxRent.value
   lastSubmitTime.value = now
   showCustomPriceDialog.value = false
-  Toast('设置成功')
+  showToast('设置成功')
 }
 
 // 关闭自定义价格弹窗
@@ -690,6 +793,45 @@ function goBack() {
   
   .tip-icon {
     font-size: 14px;
+  }
+}
+
+// 区域选择相关样式
+.loading-text {
+  color: #999;
+  font-size: 13px;
+}
+
+.error-text {
+  color: #ee0a24;
+  font-size: 13px;
+}
+
+.region-picker-desc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #666;
+  background-color: #f7f8fa;
+  
+  span {
+    color: #667eea;
+    font-weight: 500;
+  }
+}
+
+.region-empty-state {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  
+  .retry-btn {
+    margin-top: 8px;
   }
 }
 </style>

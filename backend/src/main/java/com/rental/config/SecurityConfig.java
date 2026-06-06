@@ -37,8 +37,8 @@ public class SecurityConfig {
                 .requestMatchers("/auth/send-code", "/auth/login", "/auth/refresh").permitAll()
                 .requestMatchers("/house/page", "/house/recommend", "/house/{id}").permitAll()
                 .requestMatchers("/news/page", "/news/{id}").permitAll()
-                .requestMatchers("/region/list").permitAll()
                 .requestMatchers("/health", "/actuator/**").permitAll()
+                .requestMatchers("/region/list", "/region/list-by-city").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

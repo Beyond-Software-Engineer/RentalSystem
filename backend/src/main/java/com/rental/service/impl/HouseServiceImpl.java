@@ -63,7 +63,12 @@ public class HouseServiceImpl implements HouseService {
         
         // 房型筛选（支持范围筛选）
         if (query.getRoom() != null) {
-            wrapper.eq(HouseEntity::getRoom, query.getRoom());
+            if (query.getRoom() == -1) {
+                // 其他：排除0-5范围内的值
+                wrapper.notBetween(HouseEntity::getRoom, 0, 5);
+            } else {
+                wrapper.eq(HouseEntity::getRoom, query.getRoom());
+            }
         } else {
             if (query.getMinRoom() != null) {
                 wrapper.ge(HouseEntity::getRoom, query.getMinRoom());
@@ -73,49 +78,46 @@ public class HouseServiceImpl implements HouseService {
             }
         }
         
-        // 厅数量筛选
+        // 厅数量筛选（-1表示"其他"）
         if (query.getHall() != null) {
-            wrapper.eq(HouseEntity::getHall, query.getHall());
+            if (query.getHall() == -1) {
+                wrapper.notBetween(HouseEntity::getHall, 0, 5);
+            } else {
+                wrapper.eq(HouseEntity::getHall, query.getHall());
+            }
         }
         
-        // 厨数量筛选
+        // 厨数量筛选（-1表示"其他"）
         if (query.getKitchen() != null) {
-            wrapper.eq(HouseEntity::getKitchen, query.getKitchen());
+            if (query.getKitchen() == -1) {
+                wrapper.notBetween(HouseEntity::getKitchen, 0, 5);
+            } else {
+                wrapper.eq(HouseEntity::getKitchen, query.getKitchen());
+            }
         }
         
-        // 卫数量筛选
+        // 卫数量筛选（-1表示"其他"）
         if (query.getToilet() != null) {
-            wrapper.eq(HouseEntity::getToilet, query.getToilet());
+            if (query.getToilet() == -1) {
+                wrapper.notBetween(HouseEntity::getToilet, 0, 5);
+            } else {
+                wrapper.eq(HouseEntity::getToilet, query.getToilet());
+            }
         }
         
-        // 房屋类型筛选（-1表示"其他"）
+        // 房屋类型筛选
         if (query.getHouseType() != null) {
-            if (query.getHouseType() == -1) {
-                // 其他：排除已定义的类型（1-住宅，2-公寓，3-商铺，4-写字楼）
-                wrapper.notIn(HouseEntity::getHouseType, Arrays.asList(1, 2, 3, 4));
-            } else {
-                wrapper.eq(HouseEntity::getHouseType, query.getHouseType());
-            }
+            wrapper.eq(HouseEntity::getHouseType, query.getHouseType());
         }
         
-        // 租赁方式筛选（-1表示"其他"）
+        // 租赁方式筛选
         if (query.getRentType() != null) {
-            if (query.getRentType() == -1) {
-                // 其他：排除已定义的方式（1-整租，2-合租）
-                wrapper.notIn(HouseEntity::getRentType, Arrays.asList(1, 2));
-            } else {
-                wrapper.eq(HouseEntity::getRentType, query.getRentType());
-            }
+            wrapper.eq(HouseEntity::getRentType, query.getRentType());
         }
         
-        // 装修类型筛选（-1表示"其他"）
+        // 装修类型筛选
         if (query.getDecorationType() != null) {
-            if (query.getDecorationType() == -1) {
-                // 其他：排除已定义的类型（1-毛坯，2-简装，3-精装）
-                wrapper.notIn(HouseEntity::getDecorationType, Arrays.asList(1, 2, 3));
-            } else {
-                wrapper.eq(HouseEntity::getDecorationType, query.getDecorationType());
-            }
+            wrapper.eq(HouseEntity::getDecorationType, query.getDecorationType());
         }
         if (query.getMinArea() != null) {
             wrapper.ge(HouseEntity::getArea, query.getMinArea());

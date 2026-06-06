@@ -42,9 +42,9 @@ public class ValidationUtils {
     public static final Integer FLOOR_MAX = 1000;
 
     /**
-     * 房间数量最大值
+     * 房间数量最大值（包含5）
      */
-    public static final Integer ROOM_MAX = 10;
+    public static final Integer ROOM_MAX = 5;
 
     /**
      * 数字正则表达式
@@ -246,7 +246,7 @@ public class ValidationUtils {
     }
 
     /**
-     * 验证房间数量
+     * 验证房间数量（0-5或-1表示"其他"）
      *
      * @param room 房间数量
      * @param fieldName 字段名称
@@ -257,6 +257,12 @@ public class ValidationUtils {
 
         if (room == null) {
             log.info("{}参数为空，跳过验证", fieldName);
+            return null;
+        }
+
+        // -1 表示"其他"选项，是有效值
+        if (room == -1) {
+            log.info("{}选择了'其他'选项", fieldName);
             return null;
         }
 

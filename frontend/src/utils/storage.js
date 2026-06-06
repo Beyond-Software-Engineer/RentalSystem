@@ -1,6 +1,7 @@
 const TOKEN_KEY = 'rental_token'
 const REFRESH_TOKEN_KEY = 'rental_refresh_token'
 const USER_KEY = 'rental_user'
+const LOCATION_KEY = 'rental_location'
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY)
@@ -43,4 +44,17 @@ export function clearAll() {
   removeToken()
   removeRefreshToken()
   removeUser()
+}
+
+export function getLocation() {
+  const locationStr = localStorage.getItem(LOCATION_KEY)
+  return locationStr ? JSON.parse(locationStr) : null
+}
+
+export function setLocation(location) {
+  localStorage.setItem(LOCATION_KEY, JSON.stringify(location))
+}
+
+export function removeLocation() {
+  localStorage.removeItem(LOCATION_KEY)
 }

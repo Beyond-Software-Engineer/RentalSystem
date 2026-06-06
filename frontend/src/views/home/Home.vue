@@ -88,12 +88,15 @@ import NewsCard from '@/components/NewsCard.vue'
 import LocationSelector from '@/components/LocationSelector.vue'
 import { useHouseStore } from '@/stores/house'
 import { newsApi } from '@/api/news'
+import { getLocation } from '@/utils/storage'
 
 const router = useRouter()
 const searchText = ref('')
 const loading = ref(true)
 
-const location = ref({
+// 从本地存储读取位置信息，如果不存在则使用默认值
+const storedLocation = getLocation()
+const location = ref(storedLocation || {
   province: '北京市',
   city: '北京市',
   district: '',

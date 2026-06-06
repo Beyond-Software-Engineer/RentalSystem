@@ -60,9 +60,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Icon, Popup, Button } from 'vant'
 import locationData from '../assets/location.json'
+import { getLocation, setLocation } from '../utils/storage'
+import { useAppStore } from '../stores/app'
 
 const props = defineProps({
   modelValue: {
@@ -83,12 +85,32 @@ const emit = defineEmits(['update:modelValue', 'change'])
 const showPicker = ref(false)
 const activeTab = ref(0)
 
-const selectedProvince = ref(props.modelValue.province || '北京市')
-const selectedProvinceCode = ref(props.modelValue.provinceCode || '110000')
-const selectedCity = ref(props.modelValue.city || '北京市')
-const selectedCityCode = ref(props.modelValue.cityCode || '110100')
-const selectedDistrict = ref(props.modelValue.district || '朝阳区')
-const selectedDistrictCode = ref(props.modelValue.districtCode || '110105')
+const appStore = useAppStore()
+
+// 默认位置信息
+const defaultLocation = {
+  province: '北京市',
+  city: '北京市',
+  district: '朝阳区',
+  provinceCode: '110000',
+  cityCode: '110100',
+  districtCode: '110105'
+}
+
+// 从本地存储读取位置信息，如果不存在则使用默认值
+const getDefaultLocation = () => {
+  const storedLocation = getLocation()
+  return storedLocation || defaultLocation
+}
+
+const storedLocation = getDefaultLocation()
+
+const selectedProvince = ref(props.modelValue.province || storedLocation.province)
+const selectedProvinceCode = ref(props.modelValue.provinceCode || storedLocation.provinceCode)
+const selectedCity = ref(props.modelValue.city || storedLocation.city)
+const selectedCityCode = ref(props.modelValue.cityCode || storedLocation.cityCode)
+const selectedDistrict = ref(props.modelValue.district || storedLocation.district)
+const selectedDistrictCode = ref(props.modelValue.districtCode || storedLocation.districtCode)
 
 const tabs = ['省份', '城市', '区县']
 
@@ -239,6 +261,13 @@ function confirmSelection() {
     cityCode: selectedCityCode.value,
     districtCode: selectedDistrictCode.value
   }
+  
+  // 将位置信息保存到本地存储
+  setLocation(result)
+  
+  // 更新全局状态
+  appStore.setLocation(result)
+  
   emit('update:modelValue', result)
   emit('change', result)
   showPicker.value = false
